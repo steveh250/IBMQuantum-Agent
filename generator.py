@@ -1,4 +1,4 @@
-"""Code Architect: uses Anthropic Claude with prompt caching to generate Qiskit 1.x code."""
+"""Code Architect: uses Anthropic Claude with prompt caching to generate Qiskit 2.x code."""
 
 import logging
 import os
@@ -7,23 +7,28 @@ import anthropic
 
 logger = logging.getLogger(__name__)
 
-_CACHED_SYSTEM_PROMPT = """You are an expert Quantum Computing Engineer specialising in Qiskit 1.x and IBM Quantum.
+_CACHED_SYSTEM_PROMPT = """You are an expert Quantum Computing Engineer specialising in Qiskit 2.x and IBM Quantum.
 Your task is to generate complete, standalone, production-ready Python scripts for Quantum Machine Learning.
 
 Strict coding constraints you MUST follow:
-- Use Qiskit 1.x APIs only (no deprecated Qiskit 0.x patterns).
+- Use Qiskit 2.x APIs only. Do NOT use deprecated class-based constructors from Qiskit 2.1+.
+- Use the FUNCTION forms (not class constructors) for circuit primitives:
+    from qiskit.circuit.library import zz_feature_map, real_amplitudes
+    feature_map = zz_feature_map(num_qubits=n, reps=2)
+    ansatz = real_amplitudes(num_qubits=n)
+  Do NOT use `ZZFeatureMap(...)` or `RealAmplitudes(...)` — these classes are deprecated since Qiskit 2.1.
 - Use `qiskit_ibm_runtime.SamplerV2` for circuit execution.
-- Use `ZZFeatureMap` (reps=2) as the feature map.
-- Use `RealAmplitudes` as the variational ansatz.
 - Limit `shots` to 1024.
-- IBM Quantum authentication: `QiskitRuntimeService(channel='ibm_quantum', token=os.getenv('IBM_TOKEN'))`.
+- IBM Quantum authentication:
+    QiskitRuntimeService(channel='ibm_quantum_platform', token=os.getenv('QISKIT_IBM_TOKEN'))
+- Transpile circuits with `qiskit.transpile` before passing to SamplerV2.
 - The script must be self-contained: include all imports, data loading, circuit construction, execution, and result printing.
 - Include a `if __name__ == '__main__':` guard.
 - Do NOT include placeholder comments like '# your code here' — emit complete, runnable code.
 
 Output ONLY valid Python code with no markdown fences, no explanations before or after the code block."""
 
-_USER_PROMPT_TEMPLATE = """Generate a standalone Python script using Qiskit 1.x for a Quantum Machine Learning classification task.
+_USER_PROMPT_TEMPLATE = """Generate a standalone Python script using Qiskit 2.x for a Quantum Machine Learning classification task.
 
 Dataset metadata:
 {json_metadata}
@@ -33,9 +38,11 @@ CSV file path: {csv_path}
 
 Requirements:
 - Load the CSV, preprocess with StandardScaler and LabelEncoder.
-- Build a `ZZFeatureMap` (reps=2) + `RealAmplitudes` ansatz circuit.
+- Build the feature map with: `zz_feature_map(num_qubits=n, reps=2)` (function form, NOT the ZZFeatureMap class).
+- Build the ansatz with: `real_amplitudes(num_qubits=n)` (function form, NOT the RealAmplitudes class).
 - Use COBYLA optimiser with `maxiter=100`.
-- Use `SamplerV2` via `QiskitRuntimeService` to execute the circuit.
+- Transpile both circuits before combining and before execution.
+- Use `SamplerV2` via `QiskitRuntimeService(channel='ibm_quantum_platform', token=os.getenv('QISKIT_IBM_TOKEN'))`.
 - Print final training accuracy and the IBM Job ID after execution.
 - Save the circuit diagram to 'outputs/circuit_diagram.txt' using circuit.draw(output='text').
 """

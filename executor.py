@@ -48,13 +48,13 @@ def save_and_run(
         logger.info("Dry-run enabled — stopping before IBM Quantum submission.")
         return {"script_path": str(script_path), "status": "dry_run"}
 
-    # Inject the IBM_TOKEN and optional instance env vars before running
+    # Inject Qiskit 2.x env vars before running the generated script
     env = os.environ.copy()
     ibm_token = os.getenv("IBM_QUANTUM_TOKEN")
     if ibm_token:
-        env["IBM_TOKEN"] = ibm_token
+        env["QISKIT_IBM_TOKEN"] = ibm_token
     if instance:
-        env["IBM_INSTANCE"] = instance
+        env["QISKIT_IBM_INSTANCE"] = instance
         logger.info("Using IBM Quantum instance: %s", instance)
 
     logger.info("Submitting circuit to IBM Quantum...")
