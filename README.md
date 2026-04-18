@@ -119,6 +119,72 @@ python main.py --file data/my_dataset.csv --target label --instance ibm-q/open/m
 
 ---
 
+## Test datasets
+
+Two ready-made datasets are included in `data/` to validate the pipeline end-to-end without needing real experimental data.
+
+### `data/test_dataset_abort.csv` — Particle Beam Classification
+
+Simulates a detector classifying **protons** vs **pions** from four clearly separated physical signatures (energy, momentum, transverse momentum, ionisation rate). The two particle types occupy completely distinct regions of feature space, making them trivially separable by a linear classifier.
+
+| Metric | Value | Expected outcome |
+|---|---|---|
+| Rows | 1,000 | ✓ below 50,000 |
+| Features | 4 | ✓ below 16 PCA components |
+| LinearSVC accuracy | **1.000** | ⛔ triggers ABORT (> 0.90) |
+| Complexity gap | 0.000 | No quantum advantage |
+
+**Target column:** `particle_type`
+
+```bash
+python main.py --file data/test_dataset_abort.csv --target particle_type
+```
+
+Expected output: the pipeline prints `[ABORT] dataset is classically trivial` after Stage 1 and exits before making any API call.
+
+---
+
+### `data/test_dataset_run.csv` — Quantum Materials Phase Classification
+
+Simulates classifying condensed-matter samples as either a **topological insulator** or a **trivial insulator** phase. The phase boundary is governed by a non-linear invariant combining spin-orbit coupling, crystal field splitting, exchange interaction, hopping parameters, magnetisation, lattice strain, Fermi energy, and disorder strength — directly analogous to the Z₂ topological invariant from real band theory.
+
+This non-linear, entangled feature structure is exactly what a ZZ Feature Map quantum kernel is designed to exploit: a linear classifier fails while a non-linear model succeeds, justifying quantum resources.
+
+| Metric | Value | Expected outcome |
+|---|---|---|
+| Rows | 900 | ✓ below 50,000 |
+| Features | 8 | ✓ 8 PCA components cover 95% variance |
+| LinearSVC accuracy | **0.649** | ✓ well below 0.90 |
+| RandomForest accuracy | 1.000 | Strong non-linear signal |
+| Complexity gap | **0.351** | High — justifies quantum kernel |
+
+**Target column:** `phase`
+
+```bash
+# Dry run — inspect the generated Qiskit script without submitting to IBM Quantum
+python main.py --file data/test_dataset_run.csv --target phase --dry-run
+
+# Full run — generate code and submit to IBM Quantum
+python main.py --file data/test_dataset_run.csv --target phase --instance ibm-q/open/main
+
+# Debug mode — see raw benchmark JSON, full Ollama rationale, and generated code
+python main.py --file data/test_dataset_run.csv --target phase --dry-run --log-level debug
+```
+
+Expected output: the pipeline proceeds through all four stages, generating a `zz_feature_map` + `real_amplitudes` Qiskit 2.x circuit with `SamplerV2` and (if not dry-run) submitting it to IBM Quantum.
+
+---
+
+### Regenerating the datasets
+
+The datasets were produced by `generate_test_data.py`. Run it to recreate them or to inspect the sanity-check statistics:
+
+```bash
+python generate_test_data.py
+```
+
+---
+
 ## Output files
 
 | Location | Contents |
@@ -147,16 +213,20 @@ These checks are applied twice: first by the local profiler (hard cutoff), then 
 
 ```
 IBMQuantum-Agent/
-├── main.py              # CLI entry point — orchestrates the four-stage pipeline
-├── profiler.py          # Stage 1: statistical benchmarking (scikit-learn)
-├── decision.py          # Stage 2: quantum suitability decision (Ollama via OpenAI SDK)
-├── generator.py         # Stage 3: Qiskit 2.x code generation (Claude / Anthropic SDK)
-├── executor.py          # Stage 4: script saving and IBM Quantum submission
-├── outputs/             # Generated circuit scripts (live runs)
-├── tmp/                 # Generated circuit scripts (dry-runs)
+├── main.py                          # CLI entry point — orchestrates the four-stage pipeline
+├── profiler.py                      # Stage 1: statistical benchmarking (scikit-learn)
+├── decision.py                      # Stage 2: quantum suitability decision (Ollama via OpenAI SDK)
+├── generator.py                     # Stage 3: Qiskit 2.x code generation (Claude / Anthropic SDK)
+├── executor.py                      # Stage 4: script saving and IBM Quantum submission
+├── data/
+│   ├── test_dataset_abort.csv       # Particle beam dataset — triggers ABORT (LinearSVC = 1.00)
+│   └── test_dataset_run.csv         # Quantum materials dataset — triggers PROCEED (gap = 0.35)
+├── generate_test_data.py            # Script that created the datasets above
+├── outputs/                         # Generated circuit scripts (live runs)
+├── tmp/                             # Generated circuit scripts (dry-runs)
 ├── requirements.txt
 ├── .env.example
-└── ARCHITECTURE.md      # System design and design decisions
+└── ARCHITECTURE.md                  # System design and design decisions
 ```
 
 ---
