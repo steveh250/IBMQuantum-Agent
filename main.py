@@ -58,7 +58,7 @@ def _parse_args() -> argparse.Namespace:
         "--dry-run",
         action="store_true",
         default=False,
-        help="Stop before IBM Quantum submission; save generated code to /tmp.",
+        help="Stop before IBM Quantum submission; save generated code to local tmp/.",
     )
     parser.add_argument(
         "--instance",

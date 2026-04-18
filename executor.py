@@ -4,13 +4,13 @@ import logging
 import os
 import subprocess
 import sys
-import tempfile
 from datetime import datetime
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 OUTPUTS_DIR = Path(__file__).parent / "outputs"
+TMP_DIR = Path(__file__).parent / "tmp"
 
 
 def save_and_run(
@@ -22,7 +22,7 @@ def save_and_run(
 
     Args:
         code: Python source code string for the quantum circuit.
-        dry_run: If True, save to /tmp and return without submitting.
+        dry_run: If True, save to local tmp/ folder and return without submitting.
         instance: IBM Quantum hub/group/project string (e.g. 'ibm-q/open/main').
 
     Returns:
@@ -34,7 +34,8 @@ def save_and_run(
     script_name = f"{timestamp}_circuit.py"
 
     if dry_run:
-        script_path = Path(tempfile.gettempdir()) / script_name
+        TMP_DIR.mkdir(parents=True, exist_ok=True)
+        script_path = TMP_DIR / script_name
         logger.info("Dry-run mode: saving circuit code to %s", script_path)
     else:
         script_path = OUTPUTS_DIR / script_name
