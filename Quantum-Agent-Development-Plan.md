@@ -1,13 +1,3 @@
-My final quality review identified three "blind spots" that would likely cause **Claude Code** to stall or produce buggy code if not addressed:
-
-1.  **The "Target" Column:** A CSV doesn't inherently tell the script which column is the label ($y$) and which are the features ($X$). I’ve added a `--target` argument.
-2.  **Data Encoding:** Quantum circuits only accept numerical values. If your CSV has strings (e.g., "Yes/No"), the script will crash. I added a requirement for **StandardScaler** and **LabelEncoder**.
-3.  **Qiskit Authentication:** Modern Qiskit 1.x uses the `QiskitRuntimeService` which often requires a specific `hub/group/project` string (instance) to access dedicated QPU time.
-
-Here is your finalized, copy-paste ready Technical Design Document.
-
----
-
 # Technical Design Document: Q-Agent CLI
 
 ## 1. Project Overview
