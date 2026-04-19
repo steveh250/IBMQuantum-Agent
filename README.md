@@ -144,19 +144,19 @@ Expected output: the pipeline prints `[ABORT] dataset is classically trivial` af
 
 ---
 
-### `data/test_dataset_run.csv` — Quantum Materials Phase Classification
+### `data/test_dataset_run.csv` — Quantum Materials Phase Classification (PoC-optimised)
 
-Simulates classifying condensed-matter samples as either a **topological insulator** or a **trivial insulator** phase. The phase boundary is governed by a non-linear invariant combining spin-orbit coupling, crystal field splitting, exchange interaction, hopping parameters, magnetisation, lattice strain, Fermi energy, and disorder strength — directly analogous to the Z₂ topological invariant from real band theory.
+Simulates classifying condensed-matter samples as either a **topological insulator** or a **trivial insulator** phase. The phase boundary is driven by an XOR-like relationship between spin-orbit coupling and crystal field splitting — the two primary topological order parameters. LinearSVC cannot represent a 4-quadrant boundary, so the complexity gap is high.
 
-This non-linear, entangled feature structure is exactly what a ZZ Feature Map quantum kernel is designed to exploit: a linear classifier fails while a non-linear model succeeds, justifying quantum resources.
+Deliberately simplified for fast QPU execution: **4 features → 4-qubit circuit**, **200 samples → fewer COBYLA evaluations**, and `reps=1` in the generator for shallow circuit depth. This reduces the circuit from ~96 gates (original 8-qubit, reps=2) to ~20 gates.
 
 | Metric | Value | Expected outcome |
 |---|---|---|
-| Rows | 900 | ✓ below 50,000 |
-| Features | 8 | ✓ 8 PCA components cover 95% variance |
-| LinearSVC accuracy | **0.649** | ✓ well below 0.90 |
+| Rows | 200 | ✓ below 50,000 |
+| Features | 4 | ✓ 4-qubit circuit — fast on QPU |
+| LinearSVC accuracy | **0.530** | ✓ well below 0.90 (can't learn XOR) |
 | RandomForest accuracy | 1.000 | Strong non-linear signal |
-| Complexity gap | **0.351** | High — justifies quantum kernel |
+| Complexity gap | **0.470** | Very high — strong justification for quantum kernel |
 
 **Target column:** `phase`
 
