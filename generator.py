@@ -17,10 +17,16 @@ Strict coding constraints you MUST follow:
     feature_map = zz_feature_map(feature_dimension=n, reps=2)   # first arg is 'feature_dimension', NOT 'num_qubits'
     ansatz = real_amplitudes(num_qubits=n)                       # first arg is 'num_qubits'
   Do NOT use `ZZFeatureMap(...)` or `RealAmplitudes(...)` — these classes are deprecated since Qiskit 2.1.
-- Use `qiskit_ibm_runtime.SamplerV2` for circuit execution.
+- Use `qiskit_ibm_runtime.SamplerV2` for circuit execution. Instantiate it as `SamplerV2(mode=backend)` — the parameter is `mode`, NOT `backend`.
 - Limit `shots` to 1024.
-- IBM Quantum authentication:
-    QiskitRuntimeService(channel='ibm_quantum_platform', token=os.getenv('QISKIT_IBM_TOKEN'))
+- IBM Quantum authentication and backend selection:
+    service = QiskitRuntimeService(
+        channel='ibm_quantum_platform',
+        token=os.getenv('QISKIT_IBM_TOKEN'),
+        instance=os.getenv('QISKIT_IBM_INSTANCE'),
+    )
+    backend = service.least_busy(operational=True, simulator=False)
+    sampler = SamplerV2(mode=backend)
 - Transpile circuits with `qiskit.transpile` before passing to SamplerV2.
 - The script must be self-contained: include all imports, data loading, circuit construction, execution, and result printing.
 - Include a `if __name__ == '__main__':` guard.
@@ -42,7 +48,11 @@ Requirements:
 - Build the ansatz with: `real_amplitudes(num_qubits=n)` — the first parameter IS `num_qubits`.
 - Use COBYLA optimiser with `maxiter=100`.
 - Transpile both circuits before combining and before execution.
-- Use `SamplerV2` via `QiskitRuntimeService(channel='ibm_quantum_platform', token=os.getenv('QISKIT_IBM_TOKEN'))`.
+- Use `SamplerV2(mode=backend)` — the constructor parameter is `mode`, NOT `backend`.
+- Authenticate with:
+    service = QiskitRuntimeService(channel='ibm_quantum_platform', token=os.getenv('QISKIT_IBM_TOKEN'), instance=os.getenv('QISKIT_IBM_INSTANCE'))
+    backend = service.least_busy(operational=True, simulator=False)
+    sampler = SamplerV2(mode=backend)
 - Print final training accuracy and the IBM Job ID after execution.
 - Save the circuit diagram to 'outputs/circuit_diagram.txt' using circuit.draw(output='text').
 """
