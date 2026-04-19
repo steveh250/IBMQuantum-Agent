@@ -14,8 +14,8 @@ Strict coding constraints you MUST follow:
 - Use Qiskit 2.x APIs only. Do NOT use deprecated class-based constructors from Qiskit 2.1+.
 - Use the FUNCTION forms (not class constructors) for circuit primitives:
     from qiskit.circuit.library import zz_feature_map, real_amplitudes
-    feature_map = zz_feature_map(feature_dimension=n, reps=2)   # first arg is 'feature_dimension', NOT 'num_qubits'
-    ansatz = real_amplitudes(num_qubits=n)                       # first arg is 'num_qubits'
+    feature_map = zz_feature_map(feature_dimension=n, reps=1)   # reps=1 keeps circuit shallow for QPU speed
+    ansatz = real_amplitudes(num_qubits=n, reps=1)               # reps=1 reduces gate count
   Do NOT use `ZZFeatureMap(...)` or `RealAmplitudes(...)` — these classes are deprecated since Qiskit 2.1.
 - Use `qiskit_ibm_runtime.SamplerV2` for circuit execution. Instantiate it as `SamplerV2(mode=backend)` — the parameter is `mode`, NOT `backend`.
 - Limit `shots` to 1024.
@@ -47,8 +47,8 @@ CSV file path: {csv_path}
 
 Requirements:
 - Load the CSV, preprocess with StandardScaler and LabelEncoder.
-- Build the feature map with: `zz_feature_map(feature_dimension=n, reps=2)` — the first parameter is `feature_dimension`, NOT `num_qubits`.
-- Build the ansatz with: `real_amplitudes(num_qubits=n)` — the first parameter IS `num_qubits`.
+- Build the feature map with: `zz_feature_map(feature_dimension=n, reps=1)` — use reps=1 for a shallow circuit. The first parameter is `feature_dimension`, NOT `num_qubits`.
+- Build the ansatz with: `real_amplitudes(num_qubits=n, reps=1)` — use reps=1 to minimise gate count. The first parameter IS `num_qubits`.
 - Use COBYLA optimiser with `maxiter=100`.
 - Transpile both circuits before combining and before execution.
 - Use `SamplerV2(mode=backend)` — the constructor parameter is `mode`, NOT `backend`.
