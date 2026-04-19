@@ -30,7 +30,20 @@ Strict coding constraints you MUST follow:
     sampler = SamplerV2(mode=backend)
   IMPORTANT: Never pass `instance=""` or `instance="ibm-q/open/main"` — the ibm_quantum_platform channel
   uses CRN strings or short names like "open-instance", not the old hub/group/project format.
-- Transpile circuits with `qiskit.transpile` before passing to SamplerV2.
+- Circuit composition and transpilation — follow this exact order (CRITICAL):
+    Step 1: build each sub-circuit WITHOUT transpiling:
+        feature_map = zz_feature_map(feature_dimension=n, reps=1)
+        ansatz = real_amplitudes(num_qubits=n, reps=1)
+    Step 2: compose them into a single circuit BEFORE transpiling:
+        qc = QuantumCircuit(n)
+        qc.compose(feature_map, inplace=True)
+        qc.compose(ansatz, inplace=True)
+        qc.measure_all()
+    Step 3: transpile the COMPLETE combined circuit exactly ONCE:
+        from qiskit import transpile
+        qc_t = transpile(qc, backend=backend, optimization_level=1)
+    NEVER transpile sub-circuits individually and then try to compose them —
+    transpilation maps to physical qubits making sub-circuits incompatible.
 - The script must be self-contained: include all imports, data loading, circuit construction, execution, and result printing.
 - Include a `if __name__ == '__main__':` guard.
 - Do NOT include placeholder comments like '# your code here' — emit complete, runnable code.
@@ -50,7 +63,8 @@ Requirements:
 - Build the feature map with: `zz_feature_map(feature_dimension=n, reps=1)` — use reps=1 for a shallow circuit. The first parameter is `feature_dimension`, NOT `num_qubits`.
 - Build the ansatz with: `real_amplitudes(num_qubits=n, reps=1)` — use reps=1 to minimise gate count. The first parameter IS `num_qubits`.
 - Use COBYLA optimiser with `maxiter=100`.
-- Transpile both circuits before combining and before execution.
+- Compose feature_map and ansatz into ONE circuit, then transpile the combined circuit ONCE.
+  Do NOT transpile sub-circuits separately — that makes their qubit registers incompatible.
 - Use `SamplerV2(mode=backend)` — the constructor parameter is `mode`, NOT `backend`.
 - Authenticate using this exact pattern (guard against empty string instance):
     _instance = os.getenv('QISKIT_IBM_INSTANCE') or None
