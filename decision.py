@@ -9,20 +9,67 @@ from openai import OpenAI
 logger = logging.getLogger(__name__)
 
 _SYSTEM_PROMPT = (
-    "You are a Senior Quantum Architect. Your role is to evaluate whether a dataset "
-    "is suitable for Quantum Machine Learning. You apply strict decision rules and "
-    "provide concise, evidence-based rationale."
+    "You are a Senior Quantum Architect applying a strict, rules-based checklist. "
+    "You follow the decision rules exactly as written. You do NOT invent additional "
+    "criteria or apply subjective judgment beyond what is specified. "
+    "Your output always begins with exactly [PROCEED] or [ABORT] on the first line."
 )
 
-_USER_PROMPT_TEMPLATE = (
-    "Analyze this JSON metadata: {json_metadata}.\n\n"
-    "**Decision Rules:**\n"
-    "- If `linear_svc_acc` > 0.90: ABORT (Classically trivial).\n"
-    "- If `pca_95_count` > 16: ABORT (Hardware qubit limit).\n"
-    "- If `rows` > 50,000: ABORT (Classical efficiency).\n\n"
-    "**Objective:** Does the 'Classical Gap' justify a Quantum Kernel?\n\n"
-    "**Output:** Start with [PROCEED] or [ABORT] then give a 3-bullet rationale."
-)
+_USER_PROMPT_TEMPLATE = """\
+You are evaluating a dataset for Quantum Machine Learning suitability.
+
+Dataset metadata (JSON):
+{json_metadata}
+
+═══════════════════════════════════════════════════
+STEP 1 — Apply the three hard ABORT rules IN ORDER.
+Stop and output [ABORT] at the first rule that fires.
+═══════════════════════════════════════════════════
+
+Rule A: IF linear_svc_acc > 0.90  → [ABORT]  reason: "classically trivial"
+Rule B: IF pca_95_count   > 16    → [ABORT]  reason: "exceeds QPU qubit limit"
+Rule C: IF rows           > 50000 → [ABORT]  reason: "classical methods more efficient"
+
+Evaluating rules against the metadata above:
+  Rule A: linear_svc_acc = {linear_svc_acc} → {"FIRES → ABORT" if linear_svc_acc_fires else "does not fire"}
+  Rule B: pca_95_count   = {pca_95_count}   → {"FIRES → ABORT" if pca_95_count_fires else "does not fire"}
+  Rule C: rows           = {rows}           → {"FIRES → ABORT" if rows_fires else "does not fire"}
+
+═══════════════════════════════════════════════════
+STEP 2 — If NO rule fired, assess the Classical Gap.
+═══════════════════════════════════════════════════
+
+complexity_gap = rf_acc − linear_svc_acc = {complexity_gap}
+
+  • gap < 0.10  → The linear model already captures most structure; quantum kernel unlikely to help → [ABORT]
+  • gap ≥ 0.10  → Non-linear structure present that a quantum kernel may exploit              → [PROCEED]
+
+═══════════════════════════════════════════════════
+OUTPUT FORMAT (mandatory)
+═══════════════════════════════════════════════════
+
+Line 1 must be exactly one of: [PROCEED] or [ABORT]
+Then provide exactly 3 bullet points explaining which rules fired (or did not fire) and why.
+Do not add any text before [PROCEED] or [ABORT].\
+"""
+
+
+def _build_prompt(metadata: dict) -> str:
+    linear_svc_acc = metadata.get("linear_svc_acc", 0)
+    pca_95_count   = metadata.get("pca_95_count", 0)
+    rows           = metadata.get("rows", 0)
+    complexity_gap = metadata.get("complexity_gap", 0)
+
+    return _USER_PROMPT_TEMPLATE.format(
+        json_metadata=json.dumps(metadata, indent=2),
+        linear_svc_acc=linear_svc_acc,
+        pca_95_count=pca_95_count,
+        rows=rows,
+        complexity_gap=complexity_gap,
+        linear_svc_acc_fires=linear_svc_acc > 0.90,
+        pca_95_count_fires=pca_95_count > 16,
+        rows_fires=rows > 50_000,
+    )
 
 
 def evaluate(metadata: dict) -> tuple[str, str]:
@@ -36,8 +83,7 @@ def evaluate(metadata: dict) -> tuple[str, str]:
 
     client = OpenAI(base_url=base_url, api_key="ollama")
 
-    json_metadata = json.dumps(metadata, indent=2)
-    user_message = _USER_PROMPT_TEMPLATE.format(json_metadata=json_metadata)
+    user_message = _build_prompt(metadata)
 
     logger.info("Querying Ollama at %s with model '%s'...", base_url, model)
     logger.debug("Ollama user prompt:\n%s", user_message)
@@ -48,7 +94,7 @@ def evaluate(metadata: dict) -> tuple[str, str]:
             {"role": "system", "content": _SYSTEM_PROMPT},
             {"role": "user", "content": user_message},
         ],
-        temperature=0.1,
+        temperature=0.0,
     )
 
     raw_text = response.choices[0].message.content.strip()
