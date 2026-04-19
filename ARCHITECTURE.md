@@ -17,21 +17,21 @@ flowchart TD
         B -->|Hard abort limits breached| C1([ABORT: print reason, exit])
         B -->|Metrics within limits| D
 
-        D["Stage 2 — Strategic Decision Engine\ndecision.py\n―――――――――――――――――\nOllama LLM · llama3.x\n(OpenAI-compatible API, port 11434)\ntemperature=0.0 · structured rules prompt"]
-        D -->|[ABORT]| C2([ABORT: print rationale, exit])
-        D -->|[PROCEED]| E
+        D["Stage 2 — Strategic Decision Engine\ndecision.py\n―――――――――――――――――\nOllama LLM · llama3.x\nOpenAI-compatible API, port 11434\ntemperature=0.0 · structured rules prompt"]
+        D -->|ABORT| C2([ABORT: print rationale, exit])
+        D -->|PROCEED| E
     end
 
     subgraph REMOTE ["Remote APIs"]
-        E["Stage 3 — Code Architect\ngenerator.py\n―――――――――――――――――\nClaude claude-sonnet-4-6\n(Anthropic API · ephemeral prompt cache)"]
+        E["Stage 3 — Code Architect\ngenerator.py\n―――――――――――――――――\nClaude claude-sonnet-4-6\nAnthropic API · ephemeral prompt cache"]
         E --> F
 
         F{"--dry-run?"}
-        F -->|Yes| G1["Save to tmp/\n{timestamp}_circuit.py"]
-        F -->|No| G2["Save to outputs/\n{timestamp}_circuit.py"]
+        F -->|Yes| G1["Save to tmp/\ntimestamp_circuit.py"]
+        F -->|No| G2["Save to outputs/\ntimestamp_circuit.py"]
         G2 --> H
 
-        H["Stage 4 — Quantum Executor\nexecutor.py\n―――――――――――――――――\nQiskitRuntimeService · ibm_quantum_platform\nservice.least_busy() · SamplerV2(mode=backend)"]
+        H["Stage 4 — Quantum Executor\nexecutor.py\n―――――――――――――――――\nQiskitRuntimeService · ibm_quantum_platform\nservice.least_busy() · SamplerV2 mode=backend"]
         H --> I([Log Job ID + Queue Status])
     end
 ```
@@ -64,7 +64,7 @@ graph LR
         PM --> D
         D --> BP[_build_prompt&#40;&#41;\npre-evaluates all rules\nin Python before LLM call]
         BP --> OL[(Ollama\nlocalhost:11434\ntemp=0.0)]
-        OL --> DEC{[PROCEED]\nor [ABORT]?}
+        OL --> DEC{"PROCEED or ABORT?"}
     end
 
     subgraph stage3 ["Stage 3 — generator.py"]
@@ -106,33 +106,33 @@ sequenceDiagram
     Note over Prof: Loads CSV, drops NAs,<br/>StandardScaler + LabelEncoder,<br/>LinearSVC / RF / PCA<br/>Sets abort flag if hard limit hit
     Prof-->>CLI: metadata dict (abort flag if triggered)
     alt Hard abort condition met
-        CLI-->>User: [ABORT] reason printed, exit 0
+        CLI-->>User: ABORT reason printed, exit 0
     end
 
     CLI->>Dec: evaluate(metadata)
-    Note over Dec: _build_prompt() pre-evaluates<br/>all 3 rules in Python,<br/>injects "fires / does not fire"<br/>into prompt text
+    Note over Dec: _build_prompt() pre-evaluates<br/>all 3 rules in Python,<br/>injects fires / does not fire<br/>into prompt text
     Dec->>Ollama: Chat completion (temp=0.0, structured prompt)
-    Note over Ollama: Reads pre-evaluated rule verdicts,<br/>checks gap ≥ 0.10,<br/>outputs [PROCEED] or [ABORT]<br/>on line 1
+    Note over Ollama: Reads pre-evaluated rule verdicts,<br/>checks gap >= 0.10,<br/>outputs PROCEED or ABORT<br/>on line 1
     Ollama-->>Dec: response text
-    Dec-->>CLI: (decision, rationale)
+    Dec-->>CLI: decision, rationale
     alt decision == ABORT
-        CLI-->>User: [ABORT] rationale printed, exit 0
+        CLI-->>User: ABORT rationale printed, exit 0
     end
 
     CLI->>Gen: generate_circuit_code(metadata, target, path)
     Gen->>Claude: Messages API (ephemeral cached system prompt)
-    Note over Claude: Generates Qiskit 2.x script:<br/>zz_feature_map(feature_dimension=n, reps=1)<br/>real_amplitudes(num_qubits=n, reps=1)<br/>compose → transpile once → SamplerV2(mode=backend)
+    Note over Claude: Generates Qiskit 2.x script:<br/>zz_feature_map(feature_dimension=n, reps=1)<br/>real_amplitudes(num_qubits=n, reps=1)<br/>compose then transpile once then SamplerV2
     Claude-->>Gen: Python source code
     Gen-->>CLI: code string
 
     CLI->>Exec: save_and_run(code, dry_run, instance)
     alt dry-run
-        Exec-->>User: Saved to tmp/{timestamp}_circuit.py, exit
+        Exec-->>User: Saved to tmp/timestamp_circuit.py, exit
     else live run
         Note over Exec: Injects QISKIT_IBM_TOKEN<br/>and QISKIT_IBM_INSTANCE<br/>into subprocess env
-        Exec->>IBM: subprocess → QiskitRuntimeService(ibm_quantum_platform)<br/>→ least_busy() → SamplerV2(mode=backend)<br/>→ run(transpiled_circuit, shots=1024)
+        Exec->>IBM: subprocess, QiskitRuntimeService ibm_quantum_platform,<br/>least_busy(), SamplerV2 mode=backend,<br/>run transpiled_circuit shots=1024
         IBM-->>Exec: Job ID + queue status
-        Exec-->>CLI: {job_id, status, script_path}
+        Exec-->>CLI: job_id, status, script_path
         CLI-->>User: Job ID + Queue Status displayed
     end
 ```
@@ -143,15 +143,15 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    A([Dataset metrics from profiler.py]) --> B{LinearSVC acc\n> 0.90?}
-    B -->|Yes| ABORT1([ABORT:\nClassically trivial])
-    B -->|No| C{PCA 95% components\n> 16?}
-    C -->|Yes| ABORT2([ABORT:\nExceeds QPU qubit limit])
-    C -->|No| D{Row count\n> 50,000?}
-    D -->|Yes| ABORT3([ABORT:\nClassical efficiency])
-    D -->|No| E["Pass to Ollama LLM\n(rules pre-evaluated as text in prompt)"]
-    E --> F{complexity_gap\n≥ 0.10?}
-    F -->|No| ABORT4([ABORT:\nGap too small for QPU])
+    A([Dataset metrics from profiler.py]) --> B{"LinearSVC acc > 0.90?"}
+    B -->|Yes| ABORT1([ABORT: Classically trivial])
+    B -->|No| C{"PCA 95% components > 16?"}
+    C -->|Yes| ABORT2([ABORT: Exceeds QPU qubit limit])
+    C -->|No| D{"Row count > 50000?"}
+    D -->|Yes| ABORT3([ABORT: Classical efficiency])
+    D -->|No| E["Pass to Ollama LLM\nrules pre-evaluated as text in prompt"]
+    E --> F{"complexity_gap >= 0.10?"}
+    F -->|No| ABORT4([ABORT: Gap too small for QPU])
     F -->|Yes| G([Call Anthropic API])
 ```
 
