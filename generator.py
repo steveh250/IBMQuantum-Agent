@@ -19,14 +19,17 @@ Strict coding constraints you MUST follow:
   Do NOT use `ZZFeatureMap(...)` or `RealAmplitudes(...)` — these classes are deprecated since Qiskit 2.1.
 - Use `qiskit_ibm_runtime.SamplerV2` for circuit execution. Instantiate it as `SamplerV2(mode=backend)` — the parameter is `mode`, NOT `backend`.
 - Limit `shots` to 1024.
-- IBM Quantum authentication and backend selection:
+- IBM Quantum authentication and backend selection — use EXACTLY this pattern:
+    _instance = os.getenv('QISKIT_IBM_INSTANCE') or None   # None means auto-discover; do not pass empty string
     service = QiskitRuntimeService(
         channel='ibm_quantum_platform',
         token=os.getenv('QISKIT_IBM_TOKEN'),
-        instance=os.getenv('QISKIT_IBM_INSTANCE'),
+        instance=_instance,
     )
     backend = service.least_busy(operational=True, simulator=False)
     sampler = SamplerV2(mode=backend)
+  IMPORTANT: Never pass `instance=""` or `instance="ibm-q/open/main"` — the ibm_quantum_platform channel
+  uses CRN strings or short names like "open-instance", not the old hub/group/project format.
 - Transpile circuits with `qiskit.transpile` before passing to SamplerV2.
 - The script must be self-contained: include all imports, data loading, circuit construction, execution, and result printing.
 - Include a `if __name__ == '__main__':` guard.
@@ -49,8 +52,9 @@ Requirements:
 - Use COBYLA optimiser with `maxiter=100`.
 - Transpile both circuits before combining and before execution.
 - Use `SamplerV2(mode=backend)` — the constructor parameter is `mode`, NOT `backend`.
-- Authenticate with:
-    service = QiskitRuntimeService(channel='ibm_quantum_platform', token=os.getenv('QISKIT_IBM_TOKEN'), instance=os.getenv('QISKIT_IBM_INSTANCE'))
+- Authenticate using this exact pattern (guard against empty string instance):
+    _instance = os.getenv('QISKIT_IBM_INSTANCE') or None
+    service = QiskitRuntimeService(channel='ibm_quantum_platform', token=os.getenv('QISKIT_IBM_TOKEN'), instance=_instance)
     backend = service.least_busy(operational=True, simulator=False)
     sampler = SamplerV2(mode=backend)
 - Print final training accuracy and the IBM Job ID after execution.

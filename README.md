@@ -93,7 +93,7 @@ python main.py --file PATH --target COLUMN [options]
 | `--target COLUMN` | Yes | — | Name of the label/target column in the CSV |
 | `--log-level LEVEL` | No | `info` | Verbosity: `info` or `debug` |
 | `--dry-run` | No | `False` | Generate code but skip IBM Quantum submission; saves script to `tmp/` |
-| `--instance HUB/GROUP/PROJECT` | No | — | IBM Quantum hub/group/project (e.g. `ibm-q/open/main`) |
+| `--instance INSTANCE` | No | — | IBM Quantum Platform instance name or CRN. **Omit for the free/open plan** — the service auto-discovers `open-instance`. The old `hub/group/project` format (`ibm-q/open/main`) is not valid for `ibm_quantum_platform`. |
 
 ### Examples
 
@@ -112,9 +112,9 @@ python main.py --file data/my_dataset.csv --target label --dry-run
 python main.py --file data/my_dataset.csv --target label --log-level debug
 ```
 
-**With a specific IBM Quantum instance:**
+**With a specific IBM Quantum instance** (paid/enterprise plans only — omit for free/open plan):
 ```bash
-python main.py --file data/my_dataset.csv --target label --instance ibm-q/open/main
+python main.py --file data/my_dataset.csv --target label --instance open-instance
 ```
 
 ---
@@ -164,8 +164,8 @@ This non-linear, entangled feature structure is exactly what a ZZ Feature Map qu
 # Dry run — inspect the generated Qiskit script without submitting to IBM Quantum
 python main.py --file data/test_dataset_run.csv --target phase --dry-run
 
-# Full run — generate code and submit to IBM Quantum
-python main.py --file data/test_dataset_run.csv --target phase --instance ibm-q/open/main
+# Full run — generate code and submit to IBM Quantum (omit --instance for free/open plan)
+python main.py --file data/test_dataset_run.csv --target phase
 
 # Debug mode — see raw benchmark JSON, full Ollama rationale, and generated code
 python main.py --file data/test_dataset_run.csv --target phase --dry-run --log-level debug

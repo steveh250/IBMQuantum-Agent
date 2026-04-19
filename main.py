@@ -64,8 +64,13 @@ def _parse_args() -> argparse.Namespace:
         "--instance",
         default=None,
         type=str,
-        metavar="HUB/GROUP/PROJECT",
-        help="IBM Quantum hub/group/project string (e.g. ibm-q/open/main).",
+        metavar="INSTANCE",
+        help=(
+            "IBM Quantum Platform instance name or CRN (e.g. 'open-instance'). "
+            "Only needed when you have multiple instances and want to target a specific one. "
+            "Omit this flag for the free/open plan — the service auto-discovers the correct instance. "
+            "Note: the old hub/group/project format (ibm-q/open/main) is NOT valid for ibm_quantum_platform."
+        ),
     )
     return parser.parse_args()
 
