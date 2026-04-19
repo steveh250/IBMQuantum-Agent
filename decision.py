@@ -31,9 +31,9 @@ Rule B: IF pca_95_count   > 16    → [ABORT]  reason: "exceeds QPU qubit limit"
 Rule C: IF rows           > 50000 → [ABORT]  reason: "classical methods more efficient"
 
 Evaluating rules against the metadata above:
-  Rule A: linear_svc_acc = {linear_svc_acc} → {"FIRES → ABORT" if linear_svc_acc_fires else "does not fire"}
-  Rule B: pca_95_count   = {pca_95_count}   → {"FIRES → ABORT" if pca_95_count_fires else "does not fire"}
-  Rule C: rows           = {rows}           → {"FIRES → ABORT" if rows_fires else "does not fire"}
+  Rule A: linear_svc_acc = {linear_svc_acc} → {rule_a_result}
+  Rule B: pca_95_count   = {pca_95_count}   → {rule_b_result}
+  Rule C: rows           = {rows}           → {rule_c_result}
 
 ═══════════════════════════════════════════════════
 STEP 2 — If NO rule fired, assess the Classical Gap.
@@ -66,9 +66,9 @@ def _build_prompt(metadata: dict) -> str:
         pca_95_count=pca_95_count,
         rows=rows,
         complexity_gap=complexity_gap,
-        linear_svc_acc_fires=linear_svc_acc > 0.90,
-        pca_95_count_fires=pca_95_count > 16,
-        rows_fires=rows > 50_000,
+        rule_a_result="FIRES → ABORT" if linear_svc_acc > 0.90  else "does not fire",
+        rule_b_result="FIRES → ABORT" if pca_95_count   > 16    else "does not fire",
+        rule_c_result="FIRES → ABORT" if rows           > 50_000 else "does not fire",
     )
 
 
