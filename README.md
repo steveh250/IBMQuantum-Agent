@@ -220,7 +220,7 @@ IBMQuantum-Agent/
 ├── executor.py                      # Stage 4: script saving and IBM Quantum submission
 ├── data/
 │   ├── test_dataset_abort.csv       # Particle beam dataset — triggers ABORT (LinearSVC = 1.00)
-│   └── test_dataset_run.csv         # Quantum materials dataset — triggers PROCEED (gap = 0.35)
+│   └── test_dataset_run.csv         # Quantum materials dataset — triggers PROCEED (gap = 0.47)
 ├── generate_test_data.py            # Script that created the datasets above
 ├── outputs/                         # Generated circuit scripts (live runs)
 ├── tmp/                             # Generated circuit scripts (dry-runs)
